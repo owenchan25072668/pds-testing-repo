@@ -8,7 +8,7 @@ import numpy as np
 # --- 1. SETUP & STATE ---
 st.set_page_config(page_title="Weather Predictor", page_icon="🌦️", layout="centered")
 
-# Initialize Session State (The "Backpack")
+# Initialize Session State
 if 'step' not in st.session_state:
     st.session_state.step = 1
 if 'inputs' not in st.session_state:
@@ -28,7 +28,6 @@ LOCATIONS = [
     'AliceSprings', 'Darwin', 'Katherine', 'Uluru'
 ]
 
-# Wind Directions (As requested)
 WIND_DIRECTIONS = [
     'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
     'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW', 'NA'
@@ -39,7 +38,6 @@ WIND_DIRECTIONS = [
 def load_model():
     local_filename = 'rf_model.joblib'
     if not os.path.exists(local_filename):
-        # Your specific Google Drive ID
         file_id = '1oI5bGCNDJZGLyKKosz9Axa1IbEozOw9b'
         url = f'https://drive.google.com/uc?id={file_id}'
         gdown.download(url, local_filename, quiet=False)
@@ -56,7 +54,9 @@ def go_to_step(new_step):
     st.session_state.step = new_step
     st.rerun()
 
-# --- STEP 1: LOCATION & DATE ---
+# ==========================================
+# STEP 1: LOCATION & DATE
+# ==========================================
 if st.session_state.step == 1:
     st.title("Step 1: Location & Date 📍")
     st.markdown("Start by selecting the location and date.")
@@ -75,10 +75,11 @@ if st.session_state.step == 1:
             st.session_state.inputs['rain_today'] = rain_today
             go_to_step(2)
 
-# --- STEP 2: ATMOSPHERE (Temps, Humidity, Pressure, Cloud) ---
+# ==========================================
+# STEP 2: ATMOSPHERE
+# ==========================================
 elif st.session_state.step == 2:
     st.title("Step 2: Atmosphere 🌡️")
-    st.markdown("Enter temperature, humidity, and pressure details.")
     
     with st.form("step2_form"):
         # Row A: Temperature & Sunshine
@@ -111,7 +112,6 @@ elif st.session_state.step == 2:
             temp_3 = st.number_input('Temp 3pm (°C)', value=23.0)
 
         if st.form_submit_button("Next Step ➡️", type="primary"):
-            # Save all inputs
             st.session_state.inputs.update({
                 'MinTemp': min_temp, 'MaxTemp': max_temp, 'Rainfall': rainfall,
                 'Evaporation': evaporation, 'Sunshine': sunshine,
@@ -123,13 +123,13 @@ elif st.session_state.step == 2:
     if st.button("⬅️ Back"):
         go_to_step(1)
 
-# --- STEP 3: WIND DYNAMICS ---
+# ==========================================
+# STEP 3: WIND DYNAMICS
+# ==========================================
 elif st.session_state.step == 3:
     st.title("Step 3: Wind Dynamics 💨")
-    st.markdown("Enter wind direction and speed for different times.")
 
     with st.form("step3_form"):
-        # 1. Wind Gust
         st.markdown("### 🌪️ Wind Gust")
         wg_col1, wg_col2 = st.columns(2)
         with wg_col1:
@@ -139,7 +139,6 @@ elif st.session_state.step == 3:
 
         st.markdown("---")
 
-        # 2. Wind 9am & 3pm
         w_col1, w_col2 = st.columns(2)
         with w_col1:
             st.markdown("**Wind 9am**")
@@ -156,131 +155,117 @@ elif st.session_state.step == 3:
     if st.button("⬅️ Back"):
         go_to_step(2)
 
-    # --- PREDICTION LOGIC ---
     if submit_final:
-        # 1. Gather all inputs
-        inputs = st.session_state.inputs
+        # Save inputs and GO TO STEP 4
+        st.session_state.inputs.update({
+            'WindGustDir': wg_dir, 'WindGustSpeed': wg_spd,
+            'WindDir9am': w9_dir, 'WindSpeed9am': w9_spd,
+            'WindDir3pm': w3_dir, 'WindSpeed3pm': w3_spd
+        })
+        go_to_step(4)
+
+# ==========================================
+# STEP 4: PREDICTION & RESULT
+# ==========================================
+elif st.session_state.step == 4:
+    # 1. Gather all inputs
+    inputs = st.session_state.inputs
+    d = inputs['date']
+    rain_today_enc = 1 if inputs['rain_today'] == 'Yes' else 0
+
+    # 2. Prepare Data for Model (Numerical)
+    final_input = {
+        'Year': d.year, 'Month': d.month, 'Day': d.day,
+        'RainToday': rain_today_enc,
+        'MinTemp': inputs['MinTemp'], 'MaxTemp': inputs['MaxTemp'],
+        'Rainfall': inputs['Rainfall'], 'Evaporation': inputs['Evaporation'],
+        'Sunshine': inputs['Sunshine'],
+        'Humidity9am': inputs['Humidity9am'], 'Humidity3pm': inputs['Humidity3pm'],
+        'Pressure9am': inputs['Pressure9am'], 'Pressure3pm': inputs['Pressure3pm'],
+        'Cloud9am': inputs['Cloud9am'], 'Cloud3pm': inputs['Cloud3pm'],
+        'Temp9am': inputs['Temp9am'], 'Temp3pm': inputs['Temp3pm'],
+        'WindGustSpeed': inputs['WindGustSpeed'], 
+        'WindSpeed9am': inputs['WindSpeed9am'], 
+        'WindSpeed3pm': inputs['WindSpeed3pm'],
+        # These are used for logic below, not inserted directly into numerical cols
+        'Location': inputs['location'],
+        'WindGustDir': inputs['WindGustDir'],
+        'WindDir9am': inputs['WindDir9am'],
+        'WindDir3pm': inputs['WindDir3pm'],
+    }
+
+    # 3. Create DataFrame and Fill Cols
+    try:
+        model_cols = model.feature_names_in_
+        df_predict = pd.DataFrame(0, index=[0], columns=model_cols)
         
-        # 2. Date Engineering
-        d = inputs['date']
-        # Convert Yes/No to 1/0 for the AI Model
-        rain_today_enc = 1 if inputs['rain_today'] == 'Yes' else 0
-
-        # 3. Create Base Dictionary (Use NUMBERS for the Model)
-        final_input = {
-            'Year': d.year, 'Month': d.month, 'Day': d.day,
-            'RainToday': rain_today_enc,  # <--- IMPORTANT: 1 or 0 here!
-            'RainToday_Yes': rain_today_enc, # Adding this just in case model uses this specific name
-            'MinTemp': inputs['MinTemp'], 'MaxTemp': inputs['MaxTemp'],
-            'Rainfall': inputs['Rainfall'], 'Evaporation': inputs['Evaporation'],
-            'Sunshine': inputs['Sunshine'],
-            'WindGustSpeed': wg_spd, 
-            'WindSpeed9am': w9_spd, 'WindSpeed3pm': w3_spd,
-            'Humidity9am': inputs['Humidity9am'], 'Humidity3pm': inputs['Humidity3pm'],
-            'Pressure9am': inputs['Pressure9am'], 'Pressure3pm': inputs['Pressure3pm'],
-            'Cloud9am': inputs['Cloud9am'], 'Cloud3pm': inputs['Cloud3pm'],
-            'Temp9am': inputs['Temp9am'], 'Temp3pm': inputs['Temp3pm'],
-        }
-
-        # 4. Construct DataFrame for Model
-        try:
-            model_cols = model.feature_names_in_
-            df_predict = pd.DataFrame(0, index=[0], columns=model_cols)
-        except:
-            st.error("Model structure issue. Please check .joblib file.")
-            st.stop()
-
-        # Fill Numerical Columns
+        # Fill Numbers
         for col, val in final_input.items():
-            # Only insert if the column exists in model AND value is a number
             if col in df_predict.columns and isinstance(val, (int, float)):
                 df_predict[col] = val
-
-        # 5. Handle One-Hot Encoding (Categorical)
-        # Location
-        loc_col = f"Location_{inputs['location']}"
-        if loc_col in df_predict.columns: df_predict[loc_col] = 1
         
-        # Wind Directions
-        if wg_dir != 'NA':
-            wg_col = f"WindGustDir_{wg_dir}"
-            if wg_col in df_predict.columns: df_predict[wg_col] = 1
+        # Fill Categorical (One-Hot)
+        loc = final_input['Location']
+        if f"Location_{loc}" in df_predict.columns: df_predict[f"Location_{loc}"] = 1
+        
+        dirs = [('WindGustDir', final_input['WindGustDir']), 
+                ('WindDir9am', final_input['WindDir9am']), 
+                ('WindDir3pm', final_input['WindDir3pm'])]
+        
+        for prefix, direction in dirs:
+            if direction != 'NA':
+                col_name = f"{prefix}_{direction}"
+                if col_name in df_predict.columns: df_predict[col_name] = 1
 
-        if w9_dir != 'NA':
-            w9_col = f"WindDir9am_{w9_dir}"
-            if w9_col in df_predict.columns: df_predict[w9_col] = 1
+        # 4. Predict
+        prediction = model.predict(df_predict)[0]
+        probs = model.predict_proba(df_predict)[0]
+        prob_rain = probs[1]
 
-        if w3_dir != 'NA':
-            w3_col = f"WindDir3pm_{w3_dir}"
-            if w3_col in df_predict.columns: df_predict[w3_col] = 1
+        # --- DISPLAY ---
+        st.title("Prediction Report 📊")
+        
+        col_res1, col_res2 = st.columns([1, 2])
+        
+        with col_res1:
+            if prediction == 1:
+                st.error("☔ **RAIN EXPECTED**")
+                st.metric("Confidence", f"{prob_rain*100:.1f}%")
+            else:
+                st.success("☀️ **NO RAIN**")
+                st.metric("Confidence", f"{(1-prob_rain)*100:.1f}%")
+            st.progress(prob_rain, text="Rain Probability")
 
-        # 6. Make Prediction
-        try:
-            prediction = model.predict(df_predict)[0]
-            probs = model.predict_proba(df_predict)[0]
-            prob_rain = probs[1]
-
-            # --- DISPLAY RESULTS ---
-            st.markdown("---")
-            st.subheader("Prediction Report")
+        with col_res2:
+            st.markdown("##### 📋 Input Summary")
             
-            col_res1, col_res2 = st.columns([1, 2])
+            # Prepare Display Data (User Friendly)
+            display_data = final_input.copy()
+            display_data['RainToday'] = inputs['rain_today']
+            display_data['Date'] = f"{d.day}/{d.month}/{d.year}"
             
-            with col_res1:
-                if prediction == 1:
-                    st.error("☔ **RAIN EXPECTED**")
-                    st.metric("Confidence", f"{prob_rain*100:.1f}%")
-                else:
-                    st.success("☀️ **NO RAIN**")
-                    st.metric("Confidence", f"{(1-prob_rain)*100:.1f}%")
-                
-                st.write("Rain Probability:")
-                st.progress(prob_rain)
+            # Define Order
+            desired_order = [
+                'Date', 'Location', 'RainToday',
+                'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine',
+                'Temp9am', 'Humidity9am', 'Cloud9am', 'WindDir9am', 'WindSpeed9am', 'Pressure9am',
+                'Temp3pm', 'Humidity3pm', 'Cloud3pm', 'WindDir3pm', 'WindSpeed3pm', 'Pressure3pm',
+                'WindGustDir', 'WindGustSpeed'
+            ]
             
-            with col_res2:
-                # --- TABLE VISUALIZATION ---
-                st.markdown("##### 📋 User Input Summary")
-                
-                # 1. Create the readable values
-                display_data = final_input.copy()
-                display_data['Location'] = inputs['location']
-                display_data['RainToday'] = "Yes" if rain_today_enc == 1 else "No"
-                display_data['Date'] = f"{d.day}/{d.month}/{d.year}"
-                display_data['WindGustDir'] = wg_dir
-                display_data['WindDir9am'] = w9_dir
-                display_data['WindDir3pm'] = w3_dir
+            table_rows = []
+            for key in desired_order:
+                if key in display_data:
+                    table_rows.append({"Parameter": key, "Value": display_data[key]})
+            
+            st.dataframe(pd.DataFrame(table_rows), height=400, hide_index=True, use_container_width=True)
 
-                # 2. Define the EXACT desired order
-                desired_order = [
-                    # General
-                    'Date', 'Location', 'RainToday',
-                    # Daily Summary
-                    'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine',
-                    # 9am Conditions
-                    'Temp9am', 'Humidity9am', 'Cloud9am', 'WindDir9am', 'WindSpeed9am', 'Pressure9am',
-                    # 3pm Conditions
-                    'Temp3pm', 'Humidity3pm', 'Cloud3pm', 'WindDir3pm', 'WindSpeed3pm', 'Pressure3pm',
-                    # Wind Gust
-                    'WindGustDir', 'WindGustSpeed'
-                ]
+    except Exception as e:
+        st.error(f"Error: {e}")
 
-                # 3. Build the list of rows based on this order
-                table_rows = []
-                for key in desired_order:
-                    if key in display_data:
-                        table_rows.append({"Parameter": key, "Value": display_data[key]})
-                
-                # 4. Create DataFrame and Display
-                input_df = pd.DataFrame(table_rows)
-                st.dataframe(input_df, height=400, hide_index=True, use_container_width=True)
-
-        except Exception as e:
-            st.error(f"Prediction Error: {e}")
-            st.write("Check if your One-Hot Encoding columns match the model.")
-
-        # --- START OVER BUTTON ---
-        st.markdown("---")
-        if st.button("Start Over 🔄", type="secondary"):
-            st.session_state.step = 1
-            st.session_state.inputs = {}
-            st.rerun()
+    # --- START OVER BUTTON ---
+    st.markdown("---")
+    if st.button("Start Over 🔄", type="primary"):
+        st.session_state.step = 1
+        st.session_state.inputs = {}
+        st.rerun()
