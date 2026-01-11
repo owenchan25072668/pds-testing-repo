@@ -1,40 +1,42 @@
-import os
-import gdown
-import joblib
 import streamlit as st
-import numpy as np
+import pandas as pd
+import joblib
+import gdown
+import os
 
-MODEL_PATH = "rf_model.joblib"
-URL = "https://drive.google.com/uc?id=1oI5bGCNDJZGLyKKosz9Axa1IbEozOw9b"  # direct download link
+# 1. Load the model (with Google Drive download logic)
+@st.cache_resource
+def load_model():
+    # The file name where we will save the model locally on the server
+    local_filename = 'rf_model.joblib'
 
-# Download model if missing or incomplete
-if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 100_000_000:
-    with st.spinner("Downloading model..."):
-        gdown.download(URL, MODEL_PATH, quiet=False, fuzzy=True)
+    # Check if the file already exists. If not, download it.
+    if not os.path.exists(local_filename):
+        # Your specific Google Drive File ID
+        file_id = '1oI5bGCNDJZGLyKKosz9Axa1IbEozOw9b' 
+        
+        # Construct the download URL
+        url = f'https://drive.google.com/uc?id={file_id}'
+        
+        # Download the file
+        gdown.download(url, local_filename, quiet=False)
 
-# Load model
-try:
-    model = joblib.load(MODEL_PATH)
-    st.success("Model loaded successfully!")
-except Exception as e:
-    st.error(f"Failed to load model: {e}")
-    model = None
+    # Load the model
+    return joblib.load(local_filename)
 
-# Streamlit UI
-st.set_page_config(page_title="Fraud Detection App", layout="centered")
-st.title("Fraud Detection / ML Prediction App")
+# Load the model into memory
+model = load_model()
 
-feature1 = st.number_input("Feature 1", value=0.0)
-feature2 = st.number_input("Feature 2", value=0.0)
-feature3 = st.number_input("Feature 3", value=0.0)
+# --- The rest of your app UI goes here ---
+st.title("My Random Forest Predictor")
+
+# Example input (Replace these with your actual columns!)
+input_val = st.number_input("Enter a feature value")
 
 if st.button("Predict"):
-    if model:
-        X = np.array([[feature1, feature2, feature3]])
-        try:
-            prediction = model.predict(X)
-            st.success(f"Prediction: {prediction[0]}")
-        except Exception as e:
-            st.error(f"Prediction failed: {e}")
-    else:
-        st.error("Model not loaded.")
+    # Create a dataframe with the same column names used in training
+    # adjusting 'feature_name' to your actual column name
+    input_data = pd.DataFrame([[input_val]], columns=['feature_name'])
+    
+    prediction = model.predict(input_data)
+    st.write(f"Prediction: {prediction[0]}")
