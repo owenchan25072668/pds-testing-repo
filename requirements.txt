@@ -4,5 +4,5 @@ scikit-learn==1.2.2
 joblib
 gdown
 numpy<2.0.0
-streamlit-lottie
 plotly
+
