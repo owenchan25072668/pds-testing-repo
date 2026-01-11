@@ -241,30 +241,38 @@ elif st.session_state.step == 3:
                 # --- TABLE VISUALIZATION ---
                 st.markdown("##### 📋 User Input Summary")
                 
-                # Create a PRETTY copy for the user (Text instead of Numbers)
+                # 1. Create the readable values
                 display_data = final_input.copy()
-                
-                # 1. Add the text fields back in
                 display_data['Location'] = inputs['location']
+                display_data['RainToday'] = "Yes" if rain_today_enc == 1 else "No"
+                display_data['Date'] = f"{d.day}/{d.month}/{d.year}"
                 display_data['WindGustDir'] = wg_dir
                 display_data['WindDir9am'] = w9_dir
                 display_data['WindDir3pm'] = w3_dir
-                
-                # 2. Convert 'RainToday' from 0/1 back to "Yes"/"No"
-                display_data['RainToday'] = "Yes" if rain_today_enc == 1 else "No"
-                
-                # 3. Format Date nicely
-                display_data['Date'] = f"{d.day}/{d.month}/{d.year}"
-                
-                # Remove internal model fields that look ugly in the table
-                if 'RainToday_Yes' in display_data: del display_data['RainToday_Yes']
-                if 'Year' in display_data: del display_data['Year']
-                if 'Month' in display_data: del display_data['Month']
-                if 'Day' in display_data: del display_data['Day']
 
-                # Convert to DataFrame and Show
-                input_df = pd.DataFrame(list(display_data.items()), columns=['Parameter', 'Value'])
-                st.dataframe(input_df, height=300, hide_index=True, use_container_width=True)
+                # 2. Define the EXACT desired order
+                desired_order = [
+                    # General
+                    'Date', 'Location', 'RainToday',
+                    # Daily Summary
+                    'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine',
+                    # 9am Conditions
+                    'Temp9am', 'Humidity9am', 'Cloud9am', 'WindDir9am', 'WindSpeed9am', 'Pressure9am',
+                    # 3pm Conditions
+                    'Temp3pm', 'Humidity3pm', 'Cloud3pm', 'WindDir3pm', 'WindSpeed3pm', 'Pressure3pm',
+                    # Wind Gust
+                    'WindGustDir', 'WindGustSpeed'
+                ]
+
+                # 3. Build the list of rows based on this order
+                table_rows = []
+                for key in desired_order:
+                    if key in display_data:
+                        table_rows.append({"Parameter": key, "Value": display_data[key]})
+                
+                # 4. Create DataFrame and Display
+                input_df = pd.DataFrame(table_rows)
+                st.dataframe(input_df, height=400, hide_index=True, use_container_width=True)
 
         except Exception as e:
             st.error(f"Prediction Error: {e}")
