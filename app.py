@@ -165,20 +165,28 @@ elif st.session_state.step == 3:
         d = inputs['date']
         rain_today_enc = 1 if inputs['rain_today'] == 'Yes' else 0
 
-        # 3. Create Base Dictionary
+        # 3. Create Base Dictionary (For Table Display & Numerical Inputs)
         final_input = {
-            'Year': d.year, 'Month': d.month, 'Day': d.day,
-            'RainToday': rain_today_enc,
+            # --- Categorical Fields (Added these!) ---
+            'Location': inputs['location'],
+            'WindGustDir': wg_dir,
+            'WindDir9am': w9_dir,
+            'WindDir3pm': w3_dir,
+            
+            # --- Date & Rain Today ---
+            'Date': f"{d.day}/{d.month}/{d.year}",
+            'RainToday': inputs['rain_today'],
+            
+            # --- Numerical Fields ---
             'MinTemp': inputs['MinTemp'], 'MaxTemp': inputs['MaxTemp'],
             'Rainfall': inputs['Rainfall'], 'Evaporation': inputs['Evaporation'],
             'Sunshine': inputs['Sunshine'],
+            'WindGustSpeed': wg_spd, 
+            'WindSpeed9am': w9_spd, 'WindSpeed3pm': w3_spd,
             'Humidity9am': inputs['Humidity9am'], 'Humidity3pm': inputs['Humidity3pm'],
             'Pressure9am': inputs['Pressure9am'], 'Pressure3pm': inputs['Pressure3pm'],
             'Cloud9am': inputs['Cloud9am'], 'Cloud3pm': inputs['Cloud3pm'],
             'Temp9am': inputs['Temp9am'], 'Temp3pm': inputs['Temp3pm'],
-            'WindGustSpeed': wg_spd, 
-            'WindSpeed9am': w9_spd, 
-            'WindSpeed3pm': w3_spd
         }
 
         # 4. Construct DataFrame for Model
