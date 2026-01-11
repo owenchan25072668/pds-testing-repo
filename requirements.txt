@@ -1,6 +1,7 @@
-streamlit
+streamlit==1.52.2
 scikit-learn==1.2.2
-joblib
+numpy>=1.24
+joblib>=1.2.0
 numpy
 pandas
-gdown
+gdown>=4.6.0
