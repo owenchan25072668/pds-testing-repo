@@ -1,6 +1,7 @@
 streamlit
-pandas
+# Pinning numpy to a version compatible with sklearn 1.2.2
+numpy<2.0.0
 scikit-learn==1.2.2
+pandas
 joblib
 gdown
-
