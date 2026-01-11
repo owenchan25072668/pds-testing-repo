@@ -163,21 +163,14 @@ elif st.session_state.step == 3:
         
         # 2. Date Engineering
         d = inputs['date']
+        # Convert Yes/No to 1/0 for the AI Model
         rain_today_enc = 1 if inputs['rain_today'] == 'Yes' else 0
 
-        # 3. Create Base Dictionary (For Model - MUST BE NUMBERS)
+        # 3. Create Base Dictionary (Use NUMBERS for the Model)
         final_input = {
-            # --- Categorical Fields (Encoded as 0/1 for Model) ---
-            'RainToday': rain_today_enc, # <--- FIXED: Now sending 0 or 1, not "Yes"
-            'Location': inputs['location'], # Text is okay here, logic below skips it for model
-            'WindGustDir': wg_dir,
-            'WindDir9am': w9_dir,
-            'WindDir3pm': w3_dir,
-            
-            # --- Date Info ---
             'Year': d.year, 'Month': d.month, 'Day': d.day,
-            
-            # --- Numerical Fields ---
+            'RainToday': rain_today_enc,  # <--- IMPORTANT: 1 or 0 here!
+            'RainToday_Yes': rain_today_enc, # Adding this just in case model uses this specific name
             'MinTemp': inputs['MinTemp'], 'MaxTemp': inputs['MaxTemp'],
             'Rainfall': inputs['Rainfall'], 'Evaporation': inputs['Evaporation'],
             'Sunshine': inputs['Sunshine'],
@@ -199,14 +192,16 @@ elif st.session_state.step == 3:
 
         # Fill Numerical Columns
         for col, val in final_input.items():
-            if col in df_predict.columns:
+            # Only insert if the column exists in model AND value is a number
+            if col in df_predict.columns and isinstance(val, (int, float)):
                 df_predict[col] = val
 
         # 5. Handle One-Hot Encoding (Categorical)
+        # Location
         loc_col = f"Location_{inputs['location']}"
-        if loc_col in df_predict.columns:
-            df_predict[loc_col] = 1
-            
+        if loc_col in df_predict.columns: df_predict[loc_col] = 1
+        
+        # Wind Directions
         if wg_dir != 'NA':
             wg_col = f"WindGustDir_{wg_dir}"
             if wg_col in df_predict.columns: df_predict[wg_col] = 1
@@ -229,11 +224,9 @@ elif st.session_state.step == 3:
             st.markdown("---")
             st.subheader("Prediction Report")
             
-            # Create two columns: Left for Result, Right for Data Table
             col_res1, col_res2 = st.columns([1, 2])
             
             with col_res1:
-                # Big Result Card
                 if prediction == 1:
                     st.error("☔ **RAIN EXPECTED**")
                     st.metric("Confidence", f"{prob_rain*100:.1f}%")
@@ -241,7 +234,6 @@ elif st.session_state.step == 3:
                     st.success("☀️ **NO RAIN**")
                     st.metric("Confidence", f"{(1-prob_rain)*100:.1f}%")
                 
-                # Progress Bar inside the small column
                 st.write("Rain Probability:")
                 st.progress(prob_rain)
             
@@ -249,14 +241,34 @@ elif st.session_state.step == 3:
                 # --- TABLE VISUALIZATION ---
                 st.markdown("##### 📋 User Input Summary")
                 
-                # 1. Convert the dictionary to a pandas DataFrame
-                input_df = pd.DataFrame(list(final_input.items()), columns=['Parameter', 'Value'])
+                # Create a PRETTY copy for the user (Text instead of Numbers)
+                display_data = final_input.copy()
                 
-                # 2. Display as a clean dataframe (hide index number)
+                # 1. Add the text fields back in
+                display_data['Location'] = inputs['location']
+                display_data['WindGustDir'] = wg_dir
+                display_data['WindDir9am'] = w9_dir
+                display_data['WindDir3pm'] = w3_dir
+                
+                # 2. Convert 'RainToday' from 0/1 back to "Yes"/"No"
+                display_data['RainToday'] = "Yes" if rain_today_enc == 1 else "No"
+                
+                # 3. Format Date nicely
+                display_data['Date'] = f"{d.day}/{d.month}/{d.year}"
+                
+                # Remove internal model fields that look ugly in the table
+                if 'RainToday_Yes' in display_data: del display_data['RainToday_Yes']
+                if 'Year' in display_data: del display_data['Year']
+                if 'Month' in display_data: del display_data['Month']
+                if 'Day' in display_data: del display_data['Day']
+
+                # Convert to DataFrame and Show
+                input_df = pd.DataFrame(list(display_data.items()), columns=['Parameter', 'Value'])
                 st.dataframe(input_df, height=300, hide_index=True, use_container_width=True)
 
         except Exception as e:
             st.error(f"Prediction Error: {e}")
+            st.write("Check if your One-Hot Encoding columns match the model.")
 
         # Reset Button
         st.markdown("---")
