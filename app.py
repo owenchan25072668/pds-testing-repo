@@ -11,14 +11,14 @@ import os
 import gdown
 import joblib
 
-MODEL_PATH = "rf_model.pkl"
-URL = "https://drive.google.com/uc?id=1QC5FZJvsn0We0y3rLUAMEW2ql8c15MjT"
+MODEL_PATH = "rf_model.joblib"
+URL = "https://drive.google.com/uc?id=1oI5bGCNDJZGLyKKosz9Axa1IbEozOw9b"
 
 if not os.path.exists(MODEL_PATH):
     with st.spinner("Downloading model..."):
         gdown.download(URL, MODEL_PATH, quiet=False, fuzzy=True)
 
-model = joblib.load(MODEL_PATH)
+model = joblib.load("MODEL_PATH")
 
 st.set_page_config(page_title="ML Model Deployment", layout="centered")
 
