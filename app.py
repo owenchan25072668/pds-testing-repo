@@ -165,22 +165,17 @@ elif st.session_state.step == 3:
         d = inputs['date']
         rain_today_enc = 1 if inputs['rain_today'] == 'Yes' else 0
 
-        # 3. Create Base Dictionary (Numerical Columns)
+        # 3. Create Base Dictionary
         final_input = {
-            # Date
             'Year': d.year, 'Month': d.month, 'Day': d.day,
-            # Rain Today
             'RainToday_Yes': rain_today_enc,
-            # Temps & Rain
             'MinTemp': inputs['MinTemp'], 'MaxTemp': inputs['MaxTemp'],
             'Rainfall': inputs['Rainfall'], 'Evaporation': inputs['Evaporation'],
             'Sunshine': inputs['Sunshine'],
-            # Humidity / Pressure / Cloud / Temp (9am & 3pm)
             'Humidity9am': inputs['Humidity9am'], 'Humidity3pm': inputs['Humidity3pm'],
             'Pressure9am': inputs['Pressure9am'], 'Pressure3pm': inputs['Pressure3pm'],
             'Cloud9am': inputs['Cloud9am'], 'Cloud3pm': inputs['Cloud3pm'],
             'Temp9am': inputs['Temp9am'], 'Temp3pm': inputs['Temp3pm'],
-            # Wind Speeds
             'WindGustSpeed': wg_spd, 
             'WindSpeed9am': w9_spd, 
             'WindSpeed3pm': w3_spd
@@ -200,31 +195,21 @@ elif st.session_state.step == 3:
                 df_predict[col] = val
 
         # 5. Handle One-Hot Encoding (Categorical)
-        # We check if the column exists in the model (e.g., 'Location_Albury')
-        # If it does, we set it to 1.
-        
-        # Location
         loc_col = f"Location_{inputs['location']}"
         if loc_col in df_predict.columns:
             df_predict[loc_col] = 1
             
-        # Wind Gust Direction
-        if wg_dir != 'NA': # If user selects NA, we leave all columns as 0
+        if wg_dir != 'NA':
             wg_col = f"WindGustDir_{wg_dir}"
-            if wg_col in df_predict.columns:
-                df_predict[wg_col] = 1
+            if wg_col in df_predict.columns: df_predict[wg_col] = 1
 
-        # Wind 9am Direction
         if w9_dir != 'NA':
             w9_col = f"WindDir9am_{w9_dir}"
-            if w9_col in df_predict.columns:
-                df_predict[w9_col] = 1
+            if w9_col in df_predict.columns: df_predict[w9_col] = 1
 
-        # Wind 3pm Direction
         if w3_dir != 'NA':
             w3_col = f"WindDir3pm_{w3_dir}"
-            if w3_col in df_predict.columns:
-                df_predict[w3_col] = 1
+            if w3_col in df_predict.columns: df_predict[w3_col] = 1
 
         # 6. Make Prediction
         try:
@@ -232,28 +217,41 @@ elif st.session_state.step == 3:
             probs = model.predict_proba(df_predict)[0]
             prob_rain = probs[1]
 
-            # Display
+            # --- DISPLAY RESULTS ---
             st.markdown("---")
             st.subheader("Prediction Report")
+            
+            # Create two columns: Left for Result, Right for Data Table
             col_res1, col_res2 = st.columns([1, 2])
             
             with col_res1:
+                # Big Result Card
                 if prediction == 1:
                     st.error("☔ **RAIN EXPECTED**")
-                    st.markdown(f"**{prob_rain*100:.1f}%** Chance")
+                    st.metric("Confidence", f"{prob_rain*100:.1f}%")
                 else:
                     st.success("☀️ **NO RAIN**")
-                    st.markdown(f"**{(1-prob_rain)*100:.1f}%** Chance")
+                    st.metric("Confidence", f"{(1-prob_rain)*100:.1f}%")
+                
+                # Progress Bar inside the small column
+                st.write("Rain Probability:")
+                st.progress(prob_rain)
             
             with col_res2:
-                st.progress(prob_rain, text="Rain Probability")
-                st.json(final_input, expanded=False) # Optional: Show user what data was sent
+                # --- TABLE VISUALIZATION ---
+                st.markdown("##### 📋 User Input Summary")
+                
+                # 1. Convert the dictionary to a pandas DataFrame
+                input_df = pd.DataFrame(list(final_input.items()), columns=['Parameter', 'Value'])
+                
+                # 2. Display as a clean dataframe (hide index number)
+                st.dataframe(input_df, height=300, hide_index=True, use_container_width=True)
 
         except Exception as e:
             st.error(f"Prediction Error: {e}")
-            st.write("Debug info - Columns mismatch potentially.")
 
         # Reset Button
+        st.markdown("---")
         if st.button("Start Over 🔄"):
             st.session_state.step = 1
             st.session_state.inputs = {}
