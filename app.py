@@ -49,7 +49,18 @@ if st.session_state.step == 1:
         with col1:
             date_pick = st.date_input("Select Date")
             location = st.selectbox('City / Location', 
-                                  ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Canberra', 'Hobart', 'Darwin', 'AliceSprings', 'Cobar', 'NorfolkIsland'])
+                                  [
+                                    'Albury', 'BadgerysCreek', 'Cobar', 'CoffsHarbour', 'Moree',
+                                    'Newcastle', 'NorahHead', 'NorfolkIsland', 'Penrith', 'Richmond',
+                                    'Sydney', 'SydneyAirport', 'WaggaWagga', 'Williamtown', 'Wollongong',
+                                    'Canberra', 'Tuggeranong', 'MountGinini', 'Ballarat', 'Bendigo',
+                                    'Sale', 'MelbourneAirport', 'Melbourne', 'Mildura', 'Nhil',
+                                    'Portland', 'Watsonia', 'Dartmoor', 'Brisbane', 'Cairns',
+                                    'GoldCoast', 'Townsville', 'Adelaide', 'MountGambier', 'Nuriootpa',
+                                    'Woomera', 'Albany', 'Witchcliffe', 'PearceRAAF', 'PerthAirport',
+                                    'Perth', 'SalmonGums', 'Walpole', 'Hobart', 'Launceston',
+                                    'AliceSprings', 'Darwin', 'Katherine', 'Uluru'
+                                ])
         with col2:
             rain_today = st.radio("Did it rain today?", ['No', 'Yes'], horizontal=True)
         
