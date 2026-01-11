@@ -165,17 +165,17 @@ elif st.session_state.step == 3:
         d = inputs['date']
         rain_today_enc = 1 if inputs['rain_today'] == 'Yes' else 0
 
-        # 3. Create Base Dictionary (For Table Display & Numerical Inputs)
+        # 3. Create Base Dictionary (For Model - MUST BE NUMBERS)
         final_input = {
-            # --- Categorical Fields (Added these!) ---
-            'Location': inputs['location'],
+            # --- Categorical Fields (Encoded as 0/1 for Model) ---
+            'RainToday': rain_today_enc, # <--- FIXED: Now sending 0 or 1, not "Yes"
+            'Location': inputs['location'], # Text is okay here, logic below skips it for model
             'WindGustDir': wg_dir,
             'WindDir9am': w9_dir,
             'WindDir3pm': w3_dir,
             
-            # --- Date & Rain Today ---
-            'Date': f"{d.day}/{d.month}/{d.year}",
-            'RainToday': inputs['rain_today'],
+            # --- Date Info ---
+            'Year': d.year, 'Month': d.month, 'Day': d.day,
             
             # --- Numerical Fields ---
             'MinTemp': inputs['MinTemp'], 'MaxTemp': inputs['MaxTemp'],
