@@ -12,13 +12,21 @@ import gdown
 import joblib
 
 MODEL_PATH = "rf_model.joblib"
-URL = "https://drive.google.com/uc?id=1oI5bGCNDJZGLyKKosz9Axa1IbEozOw9b"
 
 if not os.path.exists(MODEL_PATH):
-    with st.spinner("Downloading model..."):
-        gdown.download(URL, MODEL_PATH, quiet=False, fuzzy=True)
+    import gdown
+    gdown.download("https://drive.google.com/uc?id=1oI5bGCNDJZGLyKKosz9Axa1IbEozOw9b",
+                   MODEL_PATH, quiet=False)
 
-model = joblib.load("MODEL_PATH")
+print("File exists:", os.path.exists(MODEL_PATH))
+print("File size:", os.path.getsize(MODEL_PATH))
+
+try:
+    model = joblib.load(MODEL_PATH)
+except Exception as e:
+    st.error(f"Failed to load model: {e}")
+    model = None
+
 
 st.set_page_config(page_title="ML Model Deployment", layout="centered")
 
