@@ -280,7 +280,7 @@ elif st.session_state.step == 3:
 
     # --- START OVER BUTTON ---
     st.markdown("---")
-    if st.button("Start Over 🔄", type="primary"):
+    if st.button("Start Over 🔄", type="secondary"):
         st.session_state.step = 1
         st.session_state.inputs = {}
         st.rerun()
