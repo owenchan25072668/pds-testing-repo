@@ -14,7 +14,7 @@ MODEL_PATH = "rf_model.joblib"
 URL = "https://drive.google.com/uc?id=1oI5bGCNDJZGLyKKosz9Axa1IbEozOw9b"
 
 # Optional: replace with your actual local file size for integrity check
-EXPECTED_SIZE = 12345678  # in bytes
+EXPECTED_SIZE = 101449492  # in bytes
 
 # -----------------------------
 # Download model if missing
