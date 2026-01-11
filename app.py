@@ -15,7 +15,6 @@ if 'inputs' not in st.session_state:
     st.session_state.inputs = {}
 
 # --- 2. CONFIG DATA ---
-# Full Location List (As requested)
 LOCATIONS = [
     'Albury', 'BadgerysCreek', 'Cobar', 'CoffsHarbour', 'Moree',
     'Newcastle', 'NorahHead', 'NorfolkIsland', 'Penrith', 'Richmond',
@@ -167,7 +166,6 @@ elif st.session_state.step == 3:
         rain_today_enc = 1 if inputs['rain_today'] == 'Yes' else 0
 
         # 3. Create Base Dictionary (Numerical Columns)
-        # Note: We now use the ACTUAL user inputs for 9am/3pm fields instead of defaults
         final_input = {
             # Date
             'Year': d.year, 'Month': d.month, 'Day': d.day,
