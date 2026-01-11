@@ -15,7 +15,8 @@ MODEL_PATH = "rf_model.pkl"
 URL = "https://drive.google.com/uc?id=1QC5FZJvsn0We0y3rLUAMEW2ql8c15MjT"
 
 if not os.path.exists(MODEL_PATH):
-    gdown.download(URL, MODEL_PATH, quiet=False)
+    with st.spinner("Downloading model..."):
+        gdown.download(URL, MODEL_PATH, quiet=False, fuzzy=True)
 
 model = joblib.load(MODEL_PATH)
 
