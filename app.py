@@ -258,7 +258,7 @@ elif st.session_state.step == 4:
                 if key in display_data:
                     table_rows.append({"Parameter": key, "Value": display_data[key]})
             
-            st.dataframe(pd.DataFrame(table_rows), height=400, hide_index=True, use_container_width=True)
+            st.dataframe(pd.DataFrame(table_rows), height=400, hide_index=True, width=True)
 
     except Exception as e:
         st.error(f"Error: {e}")
