@@ -278,9 +278,9 @@ elif st.session_state.step == 3:
             st.error(f"Prediction Error: {e}")
             st.write("Check if your One-Hot Encoding columns match the model.")
 
-        # Reset Button
-        st.markdown("---")
-        if st.button("Start Over 🔄"):
-            st.session_state.step = 1
-            st.session_state.inputs = {}
-            st.rerun()
+    # --- START OVER BUTTON ---
+    st.markdown("---")
+    if st.button("Start Over 🔄", type="primary"):
+        st.session_state.step = 1
+        st.session_state.inputs = {}
+        st.rerun()
