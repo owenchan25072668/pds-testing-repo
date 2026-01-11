@@ -168,7 +168,7 @@ elif st.session_state.step == 3:
         # 3. Create Base Dictionary
         final_input = {
             'Year': d.year, 'Month': d.month, 'Day': d.day,
-            'RainToday_Yes': rain_today_enc,
+            'RainToday': rain_today_enc,
             'MinTemp': inputs['MinTemp'], 'MaxTemp': inputs['MaxTemp'],
             'Rainfall': inputs['Rainfall'], 'Evaporation': inputs['Evaporation'],
             'Sunshine': inputs['Sunshine'],
